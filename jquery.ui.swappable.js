@@ -7,18 +7,22 @@
  *
  * Based on jquery.ui.sortable.js
  *
+ * Modified to remove requirement for cursorAt on 2013-01-14.
+ *
+ * Uses nearest plugin from: http://gilmoreorless.github.com/jquery-nearest/
+ *
  * Depends:
  *		jquery.ui.core.js
  *		jquery.ui.mouse.js
  *		jquery.ui.widget.js
- *  	jquery.ui.sortable.js
+ *		jquery.ui.sortable.js
+ *		jquery.nearest.js
  *
  * Usage:
  *
  *		Option's specific:
  *
- *		1. Always set option "cursorAt: {top: -nnn}" as a Negative Integer.
- *		2. Always set option "items" with items' class name, not element or filter.
+ *		1. Always set option "items" with items' class name, not element or filter.
  *
  *		Example:
  *			
@@ -30,7 +34,6 @@
  *			
  *			$("#foo").swappable({
  *				items:'.bar', // Mandatory option, class only.
- *				cursorAt: {top:-20}, // MUST be set to negative. Default doesn't work!
  *			});
  */
 	 
@@ -45,6 +48,9 @@ $.widget("ui.swappable", $.ui.sortable, {
 		o.helper = "original",
 
 		this.currentContainer = this;
+
+		//We only need to call refreshPositions, because the refreshItems call has been moved to mouseCapture
+		//this.refreshPositions();
 
 		//Create and append the visible helper
 		this.helper = this._createHelper(event);
@@ -70,11 +76,6 @@ $.widget("ui.swappable", $.ui.sortable, {
 			left: this.offset.left - this.margins.left
 		};
 
-		// Only after we got the offset, we can change the helper's position to absolute
-		// TODO: Still need to figure out a way to make relative sorting possible
-		this.helper.css("position", "absolute");
-		this.cssPosition = this.helper.css("position");
-
 		$.extend(this.offset, {
 			click: { //Where the click happened, relative to the element
 				left: event.pageX - this.offset.left,
@@ -83,6 +84,11 @@ $.widget("ui.swappable", $.ui.sortable, {
 			parent: this._getParentOffset(),
 			relative: this._getRelativeOffset() //This is a relative to absolute position minus the actual position calculation - only used for relative positioned helper
 		});
+
+		// Only after we got the offset, we can change the helper's position to absolute
+		// TODO: Still need to figure out a way to make relative sorting possible
+		this.helper.css("position", "absolute");
+		this.cssPosition = this.helper.css("position");
 
 		//Generate the original position
 		this.originalPosition = this._generatePosition(event);
@@ -160,7 +166,7 @@ $.widget("ui.swappable", $.ui.sortable, {
 		var o = this.options;
 		var target = event.target;
 		
-		var itemPassive = $(target).closest(o.items);
+		var itemPassive = this.currentItem.touching(o.items).first();
 		var itemActive = this.currentItem.closest(o.items);
 		var itemPlaceholder = $(itemActive).next();
 		
